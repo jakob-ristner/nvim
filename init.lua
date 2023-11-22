@@ -37,6 +37,7 @@ require('lazy').setup({
     event = "InsertEnter",
     opts = {} -- this is equalent to setup({}) function
   },
+  { 'ThePrimeagen/harpoon' },
 
   { "nvim-tree/nvim-tree.lua" },
 
@@ -63,7 +64,7 @@ require('lazy').setup({
     },
   },
 
-  { 'folke/which-key.nvim',   opts = {} },
+  { 'folke/which-key.nvim',  opts = {} },
   {
     'lewis6991/gitsigns.nvim',
     opts = {
@@ -239,6 +240,16 @@ vim.keymap.set('n', '<leader>sd', require('telescope.builtin').diagnostics, { de
 vim.keymap.set('n', '<leader>sr', require('telescope.builtin').resume, { desc = '[S]earch [R]esume' })
 vim.keymap.set('n', '<leader>sp', ":Telescope projects<cr>", { desc = '[S]earch [P]rojects' })
 
+--Harpoon keymap
+vim.keymap.set('n', '<leader>ha', require("harpoon.mark").add_file, { desc = '[H]arpoon [A]dd file' })
+vim.keymap.set('n', '<leader>hh', require("harpoon.ui").toggle_quick_menu, { desc = '[H]arpoon Menu' })
+
+vim.keymap.set('n', '<leader>1', ":lua require(\"harpoon.ui\").nav_file(1)<cr>", { desc = 'Harpoon navigate file 1' })
+vim.keymap.set('n', '<leader>2', ":lua require(\"harpoon.ui\").nav_file(2)<cr>", { desc = 'Harpoon navigate file 2' })
+vim.keymap.set('n', '<leader>3', ":lua require(\"harpoon.ui\").nav_file(3)<cr>", { desc = 'Harpoon navigate file 3' })
+vim.keymap.set('n', '<leader>4', ":lua require(\"harpoon.ui\").nav_file(4)<cr>", { desc = 'Harpoon navigate file 4' })
+
+
 -- [[ Configure Treesitter ]]
 -- See `:help nvim-treesitter`
 -- Defer Treesitter setup after first render to improve startup time of 'nvim {filename}'
@@ -270,9 +281,17 @@ local on_attach = function(_, bufnr)
     if desc then
       desc = 'LSP: ' .. desc
     end
-
     vim.keymap.set('n', keys, func, { buffer = bufnr, desc = desc })
   end
+
+  vim.api.nvim_clear_autocmds({ group = augroup, buffer = bufnr })
+  vim.api.nvim_create_autocmd("BufWritePre", {
+    group = augroup,
+    buffer = bufnr,
+    callback = function()
+      vim.lsp.buf.format()
+    end,
+  })
 
   nmap('<leader>rn', vim.lsp.buf.rename, '[R]e[n]ame')
   nmap('<leader>ca', vim.lsp.buf.code_action, '[C]ode [A]ction')
@@ -327,6 +346,7 @@ local capabilities = vim.lsp.protocol.make_client_capabilities()
 capabilities = require('cmp_nvim_lsp').default_capabilities(capabilities)
 
 
+
 local mason_lspconfig = require 'mason-lspconfig'
 mason_lspconfig.setup_handlers {
   function(server_name)
@@ -379,4 +399,23 @@ require("nvim-tree").setup({
   filters = {
     dotfiles = true,
   },
+})
+
+local npairs = require("nvim-autopairs")
+npairs.setup({
+  npairs.setup({
+    fast_wrap = {
+      map = '<C-r>',
+      chars = { '{', '[', '(', '"', "'" },
+      pattern = [=[[%'%"%>%]%)%}%,]]=],
+      end_key = '$',
+      before_key = 'h',
+      after_key = 'l',
+      cursor_pos_before = true,
+      keys = 'qwertyuiopzxcvbnmasdfghjkl',
+      manual_position = true,
+      highlight = 'Search',
+      highlight_grey = 'Comment'
+    },
+  })
 })
