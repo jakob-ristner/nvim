@@ -5,6 +5,7 @@ vim.g.loaded_netrwPlugin = 1
 
 
 local lazypath = vim.fn.stdpath 'data' .. '/lazy/lazy.nvim'
+
 if not vim.loop.fs_stat(lazypath) then
   vim.fn.system {
     'git',
@@ -28,10 +29,11 @@ require('lazy').setup({
       'folke/neodev.nvim',
     },
   },
-  { 'akinsho/toggleterm.nvim', version = "*", config = true },
+  { 'akinsho/toggleterm.nvim', version = "*",     config = true },
+  { "rose-pine/neovim",        name = "rose-pine" },
 
   { "hrsh7th/cmp-buffer" },
-
+  { 'github/copilot.vim' },
   {
     'windwp/nvim-autopairs',
     event = "InsertEnter",
@@ -41,11 +43,12 @@ require('lazy').setup({
 
   { "nvim-tree/nvim-tree.lua" },
 
+
   {
     "ahmedkhalf/project.nvim",
     config = function()
       require("project_nvim").setup {
-        patterns = { ".git", "_darcs", ".hg", ".bzr", ".svn", "Makefile", "package.json", "Cargo.toml" },
+        patterns = { ".git", "_darcs", ".hg", ".bzr", ".svn", "Makefile", "package.json", "Cargo.toml", "venv", "main.aux" },
         datapath = vim.fn.stdpath("data"),
       }
     end
@@ -64,30 +67,16 @@ require('lazy').setup({
     },
   },
 
-  { 'folke/which-key.nvim',  opts = {} },
   {
-    'lewis6991/gitsigns.nvim',
+    'folke/which-key.nvim',
     opts = {
-      -- See `:help gitsigns.txt`
-      signs = {
-        add = { text = '+' },
-        change = { text = '~' },
-        delete = { text = '_' },
-        topdelete = { text = '‾' },
-        changedelete = { text = '~' },
+      window = {
+        border = "rounded", -- none, single, double, shadow
       },
-    },
+    }
   },
   {
-    'AlexvZyl/nordic.nvim',
-    lazy = false,
-    priority = 1000,
-    config = function()
-      require 'nordic'.load({
-        bold_keywords = true,
-        transparent_bg = true,
-      })
-    end
+    'lewis6991/gitsigns.nvim',
   },
 
 
@@ -148,6 +137,8 @@ require('lazy').setup({
 
 -- Setting options
 vim.o.hlsearch = false
+vim.o.shiftwidth = 4
+vim.o.linebreak = true
 vim.wo.number = true
 vim.o.mouse = 'a'
 vim.o.clipboard = 'unnamedplus'
@@ -160,8 +151,6 @@ vim.o.updatetime = 250
 vim.o.timeoutlen = 300
 vim.o.completeopt = 'menuone,noselect'
 vim.o.termguicolors = true
-
--- Basic Keymaps
 
 -- Remap for dealing with word wrap
 vim.keymap.set('n', 'k', "v:count == 0 ? 'gk' : 'k'", { expr = true, silent = true })
@@ -285,11 +274,12 @@ local on_attach = function(_, bufnr)
   end
 
   vim.api.nvim_clear_autocmds({ group = augroup, buffer = bufnr })
+
   vim.api.nvim_create_autocmd("BufWritePre", {
     group = augroup,
     buffer = bufnr,
     callback = function()
-      vim.lsp.buf.format()
+      vim.lsp.buf.format({ async = true })
     end,
   })
 
@@ -321,6 +311,7 @@ local on_attach = function(_, bufnr)
   end, { desc = 'Format current buffer with LSP' })
 end
 
+
 -- document existing key chains
 require('which-key').register {
   ['<leader>c'] = { name = '[C]ode', _ = 'which_key_ignore' },
@@ -332,8 +323,16 @@ require('which-key').register {
   ['<leader>w'] = { name = '[W]orkspace', _ = 'which_key_ignore' },
 }
 
--- lsp/mason seyup
-require('mason').setup()
+require("mason").setup({
+  ui = {
+    border = "rounded",
+    icons = {
+      package_installed = "✓",
+      package_pending = "➜",
+      package_uninstalled = "✗"
+    }
+  }
+})
 
 
 require('mason-lspconfig').setup({
@@ -378,10 +377,14 @@ cmp.setup {
     },
   },
   sources = {
-    { name = 'nvim_lsp', score = 3 },
+    { name = 'nvim_lsp', score = 4 },
     { name = 'luasnip',  score = 2 },
     { name = 'buffer',   score = 1 },
   },
+  window = {
+    completion = cmp.config.window.bordered(),
+    documentation = cmp.config.window.bordered(),
+  }
 }
 
 -- nvim tree
@@ -419,3 +422,110 @@ npairs.setup({
     },
   })
 })
+
+local signs = { Error = "󰅚", Warn = "󰗖", Hint = "", Info = "󰋽" }
+for type, icon in pairs(signs) do
+  local hl = "DiagnosticSign" .. type
+  vim.fn.sign_define(hl, { text = icon, texthl = hl, numhl = hl })
+end
+
+require('gitsigns').setup()
+
+require("rose-pine").setup({
+  variant = "auto",      -- auto, main, moon, or dawn
+  dark_variant = "main", -- main, moon, or dawn
+  dim_inactive_windows = false,
+  extend_background_behind_borders = true,
+
+  enable = {
+    terminal = true,
+    legacy_highlights = true, -- Improve compatibility for previous versions of Neovim
+    migrations = true,        -- Handle deprecated options automatically
+  },
+
+  styles = {
+    bold = true,
+    italic = true,
+    transparency = true,
+  },
+
+  groups = {
+    border = "muted",
+    link = "iris",
+    panel = "surface",
+
+    error = "love",
+    hint = "iris",
+    info = "foam",
+    note = "pine",
+    todo = "rose",
+    warn = "gold",
+
+    git_add = "foam",
+    git_change = "rose",
+    git_delete = "love",
+    git_dirty = "rose",
+    git_ignore = "muted",
+    git_merge = "iris",
+    git_rename = "pine",
+    git_stage = "iris",
+    git_text = "rose",
+    git_untracked = "subtle",
+
+    h1 = "iris",
+    h2 = "foam",
+    h3 = "rose",
+    h4 = "gold",
+    h5 = "pine",
+    h6 = "foam",
+  },
+
+  highlight_groups = {
+    -- Comment = { fg = "foam" },
+    -- VertSplit = { fg = "muted", bg = "muted" },
+  },
+
+  before_highlight = function(group, highlight, palette)
+    -- Disable all undercurls
+    -- if highlight.undercurl then
+    --     highlight.undercurl = false
+    -- end
+    --
+    -- Change palette colour
+    -- if highlight.fg == palette.pine then
+    --     highlight.fg = palette.foam
+    -- end
+    -- if group == "Comment" then
+    --   highlight.fg = palette.love
+    -- end
+  end,
+})
+
+
+vim.lsp.handlers["textDocument/hover"] = vim.lsp.with(vim.lsp.handlers.hover, {
+  border = "rounded",
+})
+
+require('lspconfig.ui.windows').default_options.border = 'rounded'
+
+vim.api.nvim_set_hl(0, 'LspInfoBorder', { link = 'FloatBorder' })
+vim.api.nvim_set_hl(0, 'HarpoonBorder', { link = 'FloatBorder' })
+vim.api.nvim_set_hl(0, 'TelescopePreviewBorder', { link = 'FloatBorder' })
+vim.api.nvim_set_hl(0, 'TelescopeResultsBorder', { link = 'FloatBorder' })
+vim.api.nvim_set_hl(0, 'TelescopePromptBorder', { link = 'FloatBorder' })
+vim.api.nvim_set_hl(0, 'WhichKeyBorder', { link = 'FloatBorder' })
+vim.api.nvim_set_hl(0, 'SpecialCmpBorder', { link = 'FloatBorder' })
+
+vim.api.nvim_set_hl(0, 'TelescopeResultsNormal', { link = 'NormalFloat' })
+vim.api.nvim_set_hl(0, 'TelescopePromptNormal', { link = 'NormalFloat' })
+vim.api.nvim_set_hl(0, 'TelescopePreviewNormal', { link = 'NormalFloat' })
+vim.api.nvim_set_hl(0, 'DiagnosticShowNormal', { link = 'NormalFloat' })
+vim.api.nvim_set_hl(0, 'WhichKeyFloat', { link = 'NormalFloat' })
+
+vim.diagnostic.config {
+  float = { border = "rounded" },
+}
+
+vim.cmd("highlight Pmenu guibg=NONE")
+
+vim.cmd("colorscheme rose-pine")
